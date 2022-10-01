@@ -7,32 +7,35 @@ Description: >
 Globals:
   Function:
     Timeout: 10
+    Runtime: dotnet6
+    Architectures:
+      - x86_64
+    MemorySize: 256
     Environment:
       Variables:
         HONEYCOMB_API_KEY: !Ref HoneycombApiKey
 
 Parameters:
   HoneycombApiKey:
+    NoEcho: true
+    Description: The API Key for https://honeycomb.io
     Type: String
-    Description: The honeycomb API key
+    MinLength: 1
+    MaxLength: 41
 
 Resources:
   ApiFrontendFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/ApiFrontend/
       Handler: ApiFrontend::ApiFrontend.Function::TracingFunctionHandler
-      Runtime: dotnet6
-      Architectures:
-        - x86_64
-      MemorySize: 256
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+      Environment:
         Variables:
           QUEUE_URL: !Ref TracedQueue
           TOPIC_ARN: !Ref TracedTopic
       Events:
         ApiFrontend:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /hello
             Method: get
@@ -43,14 +46,10 @@ Resources:
             TopicName: !GetAtt TracedTopic.TopicName
             
   QueueHandler:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/QueueHandler/
       Handler: QueueHandler::QueueHandler.Function::TracingFunctionHandler
-      Runtime: dotnet6
-      Architectures:
-        - x86_64
-      MemorySize: 256
       Events:
         TracedSqsEvent:
           Type: SQS
@@ -62,14 +61,10 @@ Resources:
             QueueName: !GetAtt TracedQueue.QueueName
   
   TopicHandler:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/TopicHandler/
       Handler: TopicHandler::TopicHandler.Function::TracingFunctionHandler
-      Runtime: dotnet6
-      Architectures:
-        - x86_64
-      MemorySize: 256
       Events:
         SNSEvent:
           Type: SNS
