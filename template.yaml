@@ -7,6 +7,14 @@ Description: >
 Globals:
   Function:
     Timeout: 10
+    Environment:
+      Variables:
+        HONEYCOMB_API_KEY: !Ref HoneycombApiKey
+
+Parameters:
+  HoneycombApiKey:
+    Type: String
+    Description: The honeycomb API key
 
 Resources:
   ApiFrontendFunction:
