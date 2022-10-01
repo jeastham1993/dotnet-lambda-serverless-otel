@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for honeycomb-test
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+
+Resources:
+  ApiFrontendFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./src/ApiFrontend/
+      Handler: ApiFrontend::ApiFrontend.Function::TracingFunctionHandler
+      Runtime: dotnet6
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          QUEUE_URL: !Ref TracedQueue
+          TOPIC_ARN: !Ref TracedTopic
+      Events:
+        ApiFrontend:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /hello
+            Method: get
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt TracedQueue.QueueName
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt TracedTopic.TopicName
+            
+  QueueHandler:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./src/QueueHandler/
+      Handler: QueueHandler::QueueHandler.Function::TracingFunctionHandler
+      Runtime: dotnet6
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Events:
+        TracedSqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TracedQueue.Arn
+            BatchSize: 10
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt TracedQueue.QueueName
+  
+  TopicHandler:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./src/TopicHandler/
+      Handler: TopicHandler::TopicHandler.Function::TracingFunctionHandler
+      Runtime: dotnet6
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref TracedTopic
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt TracedQueue.QueueName
+            
+  TracedQueue:
+    Type: AWS::SQS::Queue
+
+  TracedTopic:
+    Type: AWS::SNS::Topic
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  ApiFrontendApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
