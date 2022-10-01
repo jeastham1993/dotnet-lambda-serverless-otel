@@ -10,11 +10,11 @@ using Shared;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace QueueHandler
+namespace EventBridgeHandler
 {
     public class Function : SqsTracedFunction<string>
     {
-        public override string SERVICE_NAME => "QueueHandler";
+        public override string SERVICE_NAME => "EventBridgeHandler";
         
         public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
 
