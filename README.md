@@ -15,3 +15,4 @@ sam deploy --guided
 - [ ] SNS doesn't attach to the correct parent span
 - [ ] Retrieve Honeycomb API key from secrets manager
 - [ ] Add Event Bridge implementation
+- [ ] Add OTEL driven tests
