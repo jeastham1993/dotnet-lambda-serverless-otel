@@ -17,6 +17,10 @@ public class SqsQueuing : IQueuing
     public async Task Enqueue<TMessageType>(string queueUrl, MessageWrapper<TMessageType> message)
     {
         using var activity = Activity.Current?.Source.StartActivity("SQSSendMessage");
+        var (filepath, lineno, function) = TraceUtils.CodeInfo();
+        activity?.AddTag("code.function", function);
+        activity?.AddTag("code.lineno", lineno - 2);
+        activity?.AddTag("code.filepath", filepath);
         activity.AddTag("messaging.contents", JsonSerializer.Serialize(message.Data));
         
         await this._sqsClient.SendMessageAsync(new SendMessageRequest()

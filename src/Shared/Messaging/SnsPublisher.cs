@@ -20,6 +20,10 @@ public class SnsPublisher : IPublisher
     public async Task Publish<TMessageType>(string publishTo, MessageWrapper<TMessageType> message)
     {
         using var activity = Activity.Current?.Source.StartActivity("SNSPublish");
+        var (filepath, lineno, function) = TraceUtils.CodeInfo();
+        activity?.AddTag("code.function", function);
+        activity?.AddTag("code.lineno", lineno - 2);
+        activity?.AddTag("code.filepath", filepath);
         activity.AddTag("messaging.contents", JsonSerializer.Serialize(message.Data));
         
         await this._snsClient.PublishAsync(new PublishRequest()

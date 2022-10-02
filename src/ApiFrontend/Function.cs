@@ -47,12 +47,25 @@ namespace ApiFrontend
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent,
             ILambdaContext context)
         {
-            var location = await GetCallingIP();
-            var body = new Dictionary<string, string>
+            using var activity = Activity.Current.Source.StartActivity("API Lambda payload received");
+            var (filepath, lineno, function) = TraceUtils.CodeInfo();
+            activity?.AddTag("code.function", function);
+            activity?.AddTag("code.lineno", lineno - 2);
+            activity?.AddTag("code.filepath", filepath);
+            
+            if (apigProxyEvent.HttpMethod.ToUpper() != "GET")
             {
-                {"message", "hello world"},
-                {"location", location}
-            };
+                Activity.Current.RecordException(new Exception("Request received is not a GET request"));
+                Activity.Current.SetStatus(ActivityStatusCode.Error);
+
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 404,
+                    Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}}
+                };
+            }
+            
+            var location = await GetCallingIP();
 
             var message = new MessageWrapper<string>()
             {
@@ -70,7 +83,11 @@ namespace ApiFrontend
 
             return new APIGatewayProxyResponse
             {
-                Body = JsonSerializer.Serialize(body),
+                Body = JsonSerializer.Serialize(new Dictionary<string, string>
+                {
+                    {"message", "hello world"},
+                    {"location", location}
+                }),
                 StatusCode = 200,
                 Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}}
             };
@@ -86,12 +103,5 @@ namespace ApiFrontend
 
             return msg.Replace("\n", "");
         }
-        
-        public static (string filepath, int lineno, string function)
-            CodeInfo(
-                [CallerFilePath] string filePath = "",
-                [CallerLineNumber] int lineno = -1,
-                [CallerMemberName] string function = "")
-            => (filePath, lineno, function);
     }
 }
