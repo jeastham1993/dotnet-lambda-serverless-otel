@@ -16,7 +16,8 @@ public class SqsQueuing : IQueuing
     
     public async Task Enqueue<TMessageType>(string queueUrl, MessageWrapper<TMessageType> message)
     {
-        using var activity = Activity.Current?.Source.StartActivity("SQSPublish");
+        using var activity = Activity.Current?.Source.StartActivity("SQSSendMessage");
+        activity.AddTag("messaging.contents", JsonSerializer.Serialize(message.Data));
         
         await this._sqsClient.SendMessageAsync(new SendMessageRequest()
         {

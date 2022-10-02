@@ -39,9 +39,15 @@ public abstract class TracedFunction<TRequestType, TResponseType>
             .AddHoneycomb(new HoneycombOptions
             {
                 ServiceName = SERVICE_NAME,
-                ApiKey = Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY")
+                ApiKey = Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY"),
+                EnableLocalVisualizations = true
             })
             .Build();
+    }
+
+    public TracedFunction(TracerProvider provider)
+    {
+        _tracerProvider = provider;
     }
 
     public async Task<TResponseType> TracingFunctionHandler(TRequestType request,

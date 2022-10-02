@@ -3,6 +3,7 @@ using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using OpenTelemetry.Contrib.Extensions.AWSXRay.Trace;
+using OpenTelemetry.Trace;
 
 namespace Shared;
 
@@ -28,6 +29,16 @@ public abstract class ApiGatewayTracedFunction : TracedFunction<APIGatewayProxyR
 
     public override Func<APIGatewayProxyResponse, Activity, bool> AddResponseAttributes =>
         ApiGatewayResponseAttributeLoader;
+
+    public ApiGatewayTracedFunction(): base()
+    {
+        
+    }
+
+    public ApiGatewayTracedFunction(TracerProvider provider): base(provider)
+    {
+        
+    }
 
     private bool ApiGatewayPropagator(APIGatewayProxyRequest arg, ILambdaContext context)
     {

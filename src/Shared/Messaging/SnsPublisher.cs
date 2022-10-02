@@ -20,6 +20,7 @@ public class SnsPublisher : IPublisher
     public async Task Publish<TMessageType>(string publishTo, MessageWrapper<TMessageType> message)
     {
         using var activity = Activity.Current?.Source.StartActivity("SNSPublish");
+        activity.AddTag("messaging.contents", JsonSerializer.Serialize(message.Data));
         
         await this._snsClient.PublishAsync(new PublishRequest()
         {

@@ -12,7 +12,7 @@ sam deploy --guided
 
 ## To Do
 
-- [ ] SNS doesn't attach to the correct parent span
+- [X] SNS doesn't attach to the correct parent span
+- [ ] Add OTEL driven tests
 - [ ] Retrieve Honeycomb API key from secrets manager
 - [ ] Add Event Bridge implementation
-- [ ] Add OTEL driven tests

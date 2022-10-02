@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.2.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.4.0" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.5.0" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.4.16" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.2.112" />
     <PackageReference Include="Honeycomb.OpenTelemetry" Version="0.23.0-beta" />

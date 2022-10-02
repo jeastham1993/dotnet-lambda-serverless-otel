@@ -14,12 +14,10 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using OpenTelemetry.Trace;
 using Shared;
 using Shared.Messaging;
 using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
-
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace ApiFrontend
 {
@@ -35,10 +33,10 @@ namespace ApiFrontend
             _messagePublisher = new SnsPublisher(new AmazonSimpleNotificationServiceClient());
         }
 
-        internal Function(IQueuing queuing, IPublisher messagePublisher) : base()
+        internal Function(IAmazonSQS queuing, IAmazonSimpleNotificationService messagePublisher, TracerProvider provider) : base(provider)
         {
-            _queuing = queuing;
-            this._messagePublisher = messagePublisher;
+            _queuing = new SqsQueuing(queuing);
+            this._messagePublisher = new SnsPublisher(messagePublisher);
         }
 
         public override string SERVICE_NAME => "ApiFrontend";
@@ -49,12 +47,6 @@ namespace ApiFrontend
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent,
             ILambdaContext context)
         {
-            using var timeConsuming = Activity.Current.Source.StartActivity("Starting a time consuming thing");
-            var (filepath, lineno, function) = CodeInfo();
-            timeConsuming?.AddTag("code.function", function);
-            timeConsuming?.AddTag("code.lineno", lineno - 2);
-            timeConsuming?.AddTag("code.filepath", filepath);
-
             var location = await GetCallingIP();
             var body = new Dictionary<string, string>
             {
