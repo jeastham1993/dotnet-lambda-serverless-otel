@@ -10,9 +10,15 @@ The application is built using [AWS SAM](https://aws.amazon.com/serverless/sam/)
 sam deploy --guided
 ```
 
+## Tests
+
+The repo includes tests following the principles of observability driven development (ODD), inspired by [Martin Thwaites repo based on an ASP.NET Core ToDo app](https://github.com/martinjt/todo-odd). As well as asserting based on the Function response, assertions are also made on the spans emitted by the telemtry. 
+
+Writing tests based on spans ensures that good observability will be available in production, and not that observability becomes an afterthought.
+
 ## To Do
 
 - [X] SNS doesn't attach to the correct parent span
-- [ ] Add OTEL driven tests
+- [X] Add OTEL driven tests
 - [ ] Retrieve Honeycomb API key from secrets manager
 - [ ] Add Event Bridge implementation

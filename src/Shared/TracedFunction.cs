@@ -16,8 +16,8 @@ namespace Shared;
 public abstract class TracedFunction<TRequestType, TResponseType>
 {
     private TracerProvider _tracerProvider;
-    public static ActivitySource source;
     public ActivityContext Context;
+    private ActivitySource source;
 
     public abstract string SERVICE_NAME { get; }
 
@@ -55,23 +55,26 @@ public abstract class TracedFunction<TRequestType, TResponseType>
     {
         this.ContextPropagator.Invoke(request, context);
 
-        source = new ActivitySource(SERVICE_NAME);
+        if (Activity.Current == null)
+        {
+            source = new ActivitySource(SERVICE_NAME);
+        }
 
-        using (var rootSpan = source.StartActivity(context.FunctionName, ActivityKind.Server, parentContext: this.Context))
+        using (var rootSpan = (Activity.Current == null ? source : Activity.Current.Source).StartActivity(context.FunctionName, ActivityKind.Server, parentContext: this.Context))
         {
             this.AddRequestAttributes(request, rootSpan);
             
             rootSpan.AddTag("aws.lambda.invoked_arn", context.InvokedFunctionArn);
             rootSpan.AddTag("faas.id", context.InvokedFunctionArn);
             rootSpan.AddTag("faas.execution", context.AwsRequestId);
-            rootSpan.AddTag("cloud.account.id", context.InvokedFunctionArn.Split(":")[4]);
+            rootSpan.AddTag("cloud.account.id", context.InvokedFunctionArn?.Split(":")[4]);
             rootSpan.AddTag("cloud.provider", "aws");
             rootSpan.AddTag("faas.name", context.FunctionName);
             rootSpan.AddTag("faas.version", context.FunctionVersion);
 
             try
             {
-                using var handlerSpan = source.StartActivity($"{context.FunctionName}_Handler");
+                using var handlerSpan = Activity.Current.Source.StartActivity($"{context.FunctionName}_Handler");
 
                 TResponseType result = default;
                 Func<Task> action = async () => result = await Handler(request, context);
