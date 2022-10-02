@@ -9,6 +9,8 @@
     <ItemGroup>
     <PackageReference Include="Amazon.Lambda.SNSEvents" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.1.0" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.4.16" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.2.112" />
     <PackageReference Include="OpenTelemetry.Contrib.Extensions.AWSXRay" Version="1.2.0" />
     <PackageReference Include="OpenTelemetry.Contrib.Instrumentation.AWS" Version="1.0.1" />
     <PackageReference Include="OpenTelemetry.Contrib.Instrumentation.AWSLambda" Version="1.1.0-beta1" />

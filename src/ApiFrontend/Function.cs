@@ -15,6 +15,7 @@ using Amazon.SimpleNotificationService.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Shared;
+using Shared.Messaging;
 using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -24,30 +25,26 @@ namespace ApiFrontend
 {
     public class Function : ApiGatewayTracedFunction
     {
-        private static readonly HttpClient client = new HttpClient();
-        private readonly AmazonSQSClient _sqsClient;
-        private readonly AmazonSimpleNotificationServiceClient _snsClient;
-        private ActivitySource source;
+        private readonly IQueuing _queuing;
+        private readonly IPublisher _messagePublisher;
+        private readonly HttpClient _client = new HttpClient();
         
-        public override string SERVICE_NAME => "ApiFrontend";
-        public override Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> Handler =>
-            FunctionHandler;
         public Function() : base()
         {
-            _sqsClient = new AmazonSQSClient();
-            _snsClient = new AmazonSimpleNotificationServiceClient();
+            _queuing = new SqsQueuing(new AmazonSQSClient());
+            _messagePublisher = new SnsPublisher(new AmazonSimpleNotificationServiceClient());
         }
 
-        private static async Task<string> GetCallingIP()
+        internal Function(IQueuing queuing, IPublisher messagePublisher) : base()
         {
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
-
-            var msg = await client.GetStringAsync("http://checkip.amazonaws.com/")
-                .ConfigureAwait(continueOnCapturedContext: false);
-
-            return msg.Replace("\n", "");
+            _queuing = queuing;
+            this._messagePublisher = messagePublisher;
         }
+
+        public override string SERVICE_NAME => "ApiFrontend";
+        
+        public override Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> Handler =>
+            FunctionHandler;
 
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent,
             ILambdaContext context)
@@ -57,10 +54,6 @@ namespace ApiFrontend
             timeConsuming?.AddTag("code.function", function);
             timeConsuming?.AddTag("code.lineno", lineno - 2);
             timeConsuming?.AddTag("code.filepath", filepath);
-            
-            context.Logger.LogLine(timeConsuming.SpanId.ToString());
-
-            Thread.Sleep(1000);
 
             var location = await GetCallingIP();
             var body = new Dictionary<string, string>
@@ -69,35 +62,19 @@ namespace ApiFrontend
                 {"location", location}
             };
 
-            Thread.Sleep(500);
-
-            var messageBody = JsonSerializer.Serialize(new MessageWrapper<string>()
+            var message = new MessageWrapper<string>()
             {
                 Data = "Traced hello world",
                 Metadata = new MessageMetadata()
-            });
+            };
 
-            await this._sqsClient.SendMessageAsync(new SendMessageRequest()
+            var tasks = new Task[2]
             {
-                QueueUrl = Environment.GetEnvironmentVariable("QUEUE_URL"),
-                MessageBody = messageBody,
-                MessageAttributes = new Dictionary<string, MessageAttributeValue>(1)
-                {
-                    {
-                        "parentspan", new MessageAttributeValue()
-                        {
-                            StringValue = timeConsuming.SpanId.ToString(),
-                            DataType = "String" 
-                        }
-                    }
-                }
-            });
+                this._queuing.Enqueue(Environment.GetEnvironmentVariable("QUEUE_URL"), message),
+                this._messagePublisher.Publish(Environment.GetEnvironmentVariable("TOPIC_ARN"), message)
+            };
 
-            await this._snsClient.PublishAsync(new PublishRequest()
-            {
-                TopicArn = Environment.GetEnvironmentVariable("TOPIC_ARN"),
-                Message = messageBody,
-            });
+            Task.WaitAll(tasks);
 
             return new APIGatewayProxyResponse
             {
@@ -105,6 +82,17 @@ namespace ApiFrontend
                 StatusCode = 200,
                 Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}}
             };
+        }
+
+        private async Task<string> GetCallingIP()
+        {
+            _client.DefaultRequestHeaders.Accept.Clear();
+            _client.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
+
+            var msg = await _client.GetStringAsync("http://checkip.amazonaws.com/")
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            return msg.Replace("\n", "");
         }
         
         public static (string filepath, int lineno, string function)

@@ -15,7 +15,7 @@ namespace TopicHandler
 {
     public class Function : SnsTracedFunction<string>
     {
-        public override string SERVICE_NAME => "QueueHandler";
+        public override string SERVICE_NAME => "SnsTopicHandler";
         
         public override Func<SNSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
 

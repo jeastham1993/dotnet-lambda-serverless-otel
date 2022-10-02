@@ -39,13 +39,8 @@ public abstract class SnsTracedFunction<TResponse> : TracedFunction<SNSEvent, TR
     {
         var body = JsonSerializer.Deserialize<MessageWrapper<dynamic>>(message.Sns.Message);
 
-        var xRayId = Environment.GetEnvironmentVariable("_X_AMZN_TRACE_ID");
-
-        var traceID = xRayId.Replace("Root=1-", "").Replace("-", "").Split(";")[0];
-        var spanId = xRayId.Split(';')[1].Replace("Parent=", "");
-
-        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(traceID.AsSpan()),
-            ActivitySpanId.CreateFromString(spanId.AsSpan()), ActivityTraceFlags.Recorded);
+        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(body.Metadata.TraceParent.AsSpan()),
+            ActivitySpanId.CreateFromString(body.Metadata.ParentSpan.AsSpan()), ActivityTraceFlags.Recorded);
 
         return hydratedContext;
     }
