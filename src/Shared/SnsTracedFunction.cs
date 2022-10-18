@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SNSEvents;
+using Shared.Messaging;
 
 namespace Shared;
 

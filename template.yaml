@@ -38,7 +38,7 @@ Resources:
           Type: Api
           Properties:
             Path: /hello
-            Method: get
+            Method: post
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt TracedQueue.QueueName

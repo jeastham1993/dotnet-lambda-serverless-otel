@@ -1,8 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Serialization;
-using ThirdParty.Json.LitJson;
 
-namespace Shared;
+namespace Shared.Messaging;
 
 public record MessageWrapper<T>
 {

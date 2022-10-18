@@ -53,7 +53,7 @@ namespace ApiFrontend
             activity?.AddTag("code.lineno", lineno - 2);
             activity?.AddTag("code.filepath", filepath);
             
-            if (apigProxyEvent.HttpMethod.ToUpper() != "GET")
+            if (apigProxyEvent.HttpMethod.ToUpper() != "POST")
             {
                 Activity.Current.RecordException(new Exception("Request received is not a GET request"));
                 Activity.Current.SetStatus(ActivityStatusCode.Error);
